@@ -186,3 +186,32 @@ export const resetPasswordController = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+// refresh token controller
+export const refreshController = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken)
+    return res.status(401).json({ message: "Missing refreshToken" });
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    // const user = await UserModel.findById(decoded.user.userId).select('-password')
+
+    const newAccessToken = generateAccessToken(decoded.user);
+    return res.status(200).json({
+      message: "new accessToken was issued",
+      accessToken: newAccessToken,
+    });
+  } catch (err) {
+    console.log("error occured ine the refreshcontroller ", err);
+    return res.status(401).json({ message: "Invalid refreshToken" });
+  }
+};
+
+// get profile controller
+export const getProfileController = (req, res) => {
+  return res.status(200).json({
+    message: "User sent successfully",
+    user: req.user,
+    success: true,
+  });
+};
