@@ -1,8 +1,10 @@
 import UserModel from "../models/userModel.js";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { generateAccessToken, setCookies } from "../utils/tokens.js";
 import { sendEmailVerification } from "../utils/sendMail.js";
 import jwt from "jsonwebtoken";
+import { sendResetPasswordLink } from "../utils/sendResetPassword.js";
 export const signUpController = async (req, res) => {
   const { name, email, password } = req.body;
   const trimmedName = name?.trim();
@@ -97,12 +99,10 @@ export const loginController = async (req, res) => {
     if (!user.verified) {
       const code = Math.floor(Math.random() * 900000 + 100000);
       const result = await sendEmailVerification(user, code);
-      return res
-        .status(400)
-        .json({
-          message:
-            "Please check your inbox to check your email to verify your account",
-        });
+      return res.status(400).json({
+        message:
+          "Please check your inbox to check your email to verify your account",
+      });
     }
     const userObj = { userId: user._id, email: trimmedEmail, verified: true };
 
@@ -111,6 +111,78 @@ export const loginController = async (req, res) => {
     return res.status(200).json({ message: "You are logged in successfully" });
   } catch (error) {
     console.log("error occured in the login controller ", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// logout controller
+export const logoutController = async (req, res) => {
+  res.clearCookie("refreshToken");
+  return res
+    .status(200)
+    .json({ message: "Logged out successfully", success: true });
+};
+
+// forgot password controller
+export const forgotPasswordController = async (req, res) => {
+  const { email } = req.body;
+  const trimmedEmail = email?.trim().toLowerCase();
+  if (!trimmedEmail)
+    return res
+      .status(400)
+      .json({ message: "Email is required", success: false });
+  try {
+    const user = await UserModel.findOne({ email: trimmedEmail });
+    if (!user) return res.status(400).json({ message: "Invalid Email" });
+    const code = crypto.randomBytes(32).toString("hex");
+    user.passwordVerificationCode = code;
+    user.passwordVerificationExpires = Date.now() + 15 * 60 * 1000;
+    await user.save();
+    const result = await sendResetPasswordLink(user, code);
+    if (result) {
+      return res.status(200).json({ message: "Reset Password Link Sent" });
+    }
+    return res.status(400).json({
+      message: "We could not send a reset link please try again later",
+    });
+  } catch (err) {
+    console.log("error occured in the forgotpassword controller ", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// reset password controller
+
+export const resetPasswordController = async (req, res) => {
+  const { code } = req.params;
+  const { email, password } = req.body;
+  const trimmedEmail = email?.trim().toLowerCase();
+  if (!trimmedEmail)
+    return res.status(400).json({ message: "Missing credentials" });
+  if (!password)
+    return res.status(400).json({ message: "new password is required" });
+  if (!code)
+    return res.status(400).json({ message: "Missing Verification code" });
+
+  try {
+    const user = await UserModel.findOne({ email: trimmedEmail });
+    if (!user) return res.status(404).json({ message: "User does not exist" });
+    if (
+      code !== user.passwordVerificationCode ||
+      user.passwordVerificationExpires < Date.now()
+    )
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired verification code" });
+    const hashesPassword = await bcrypt.hash(password, 10);
+    user.password = hashesPassword;
+    user.passwordVerificationCode = null;
+    user.passwordVerificationExpires = null;
+    await user.save();
+
+    return res.status(200).json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.log("error occured in the reset password controller ", err);
     return res.status(500).json({ message: "Server error" });
   }
 };
