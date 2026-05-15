@@ -5,6 +5,7 @@ import { generateAccessToken, setCookies } from "../utils/tokens.js";
 import { sendEmailVerification } from "../utils/sendMail.js";
 import jwt from "jsonwebtoken";
 import { sendResetPasswordLink } from "../utils/sendResetPassword.js";
+
 export const signUpController = async (req, res) => {
   const { name, email, password } = req.body;
   const trimmedName = name?.trim();
@@ -54,24 +55,25 @@ export const signUpController = async (req, res) => {
 };
 
 export const verifyEmailController = async (req, res) => {
-  const { accessToken, code } = req.body;
+  const { email, code } = req.body;
+  console.log({ code });
   try {
-    const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
-    const email = decoded.user.email;
     const user = await UserModel.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+    console.log(user);
     if (
       user.emailVerificationCode !== code ||
-      user.emailVerificationExpires + 15 * 60 * 1000 > Date.now()
+      user.emailVerificationExpires < Date.now()
     ) {
       return res
         .status(400)
         .json({ message: "Invalid or expired verification code" });
-      user.verified = true;
-      user.emailVerificationCode = null;
-      user.emailVerificationExpires = null;
-      await user.save();
-      return res.status(200).json({ message: "Email verified successfully" });
     }
+    user.verified = true;
+    user.emailVerificationCode = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+    return res.status(200).json({ message: "Email verified successfully" });
   } catch (err) {
     console.log("error occured the verify email controller ", err);
     return res.status(500).json({ message: "server error" });
@@ -92,6 +94,12 @@ export const loginController = async (req, res) => {
         .status(401)
         .json({ message: "Invalid credentials", success: false });
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    const userObj = {
+      userId: user._id,
+      email: trimmedEmail,
+      verified: user.verified,
+    };
+    const accessToken = generateAccessToken(userObj);
     if (!isPasswordValid)
       return res
         .status(401)
@@ -99,18 +107,22 @@ export const loginController = async (req, res) => {
     if (!user.verified) {
       const code = Math.floor(Math.random() * 900000 + 100000);
       const result = await sendEmailVerification(user, code);
+      user.emailVerificationCode = code;
+      user.emailVerificationExpires = Date.now() + 15 * 60 * 1000;
+      await user.save();
       return res.status(400).json({
         message:
           "Please check your inbox to check your email to verify your account",
+        accessToken,
       });
     }
-    const userObj = { userId: user._id, email: trimmedEmail, verified: true };
 
-    const accessToken = generateAccessToken(userObj);
     setCookies(res, user);
-    return res.status(200).json({ message: "You are logged in successfully" });
+    return res
+      .status(200)
+      .json({ message: "You are logged in successfully", accessToken });
   } catch (error) {
-    console.log("error occured in the login controller ", err);
+    console.log("error occured in the login controller ", error);
     return res.status(500).json({ message: "Server error" });
   }
 };

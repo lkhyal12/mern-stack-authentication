@@ -9,6 +9,7 @@ export const sendEmailVerification = async (user, code) => {
       subject: "Email verification",
       html: VERIFICATION_EMAIL_TEMPLATE.replace("{code}", code),
     });
+    console.log(info);
     return info;
   } catch (err) {
     console.log("verification error ", err);

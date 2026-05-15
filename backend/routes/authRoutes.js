@@ -5,6 +5,7 @@ import {
   loginController,
   resetPasswordController,
   signUpController,
+  verifyEmailController,
 } from "../controllers/authControllers.js";
 import { limiter } from "../middleware/limitter.js";
 import { checkAuth } from "../middleware/checkAuth.js";
