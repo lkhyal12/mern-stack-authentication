@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import FormBtn from "./FormBtn";
+import { useAuthStore } from "../store/authStore";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const OtpPage = () => {
   const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const { isLoading, user, verifyEmail, error } = useAuthStore();
   const inputsRef = useRef([]);
+  const location = useLocation();
+  const email = location.state?.email;
+  const navigate = useNavigate();
   function handleChange(e, index) {
     let value = e.target.value;
     value = value.replace(/\D/g, "");
@@ -53,7 +59,9 @@ const OtpPage = () => {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    console.log("code", code);
+    const joindCode = code.join("");
+    const { success } = await verifyEmail(email, joindCode);
+    if (success) return navigate("/");
   }
 
   useEffect(() => {
@@ -90,7 +98,8 @@ const OtpPage = () => {
             />
           ))}
         </div>
-        <FormBtn text={"Verify Email"} isLoading={false} />
+        <FormBtn text={"Verify Email"} isLoading={isLoading} />
+        {error && <div className="text-center text-red-500">{error}</div>}
       </form>
     </div>
   );

@@ -2,7 +2,7 @@ import { transporter } from "./nodemailer.js";
 import { PASSWORD_RESET_REQUEST_TEMPLATE } from "./verificationTemplate.js";
 
 export const sendResetPasswordLink = async (user, code) => {
-  const url = `http://localhost:5317/reset-password/${code}`;
+  const url = `http://localhost:5173/reset-password/${code}?id=${user._id}`;
 
   try {
     const info = await transporter.sendMail({

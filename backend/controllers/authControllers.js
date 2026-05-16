@@ -111,8 +111,7 @@ export const loginController = async (req, res) => {
       user.emailVerificationExpires = Date.now() + 15 * 60 * 1000;
       await user.save();
       return res.status(400).json({
-        message:
-          "Please check your inbox to check your email to verify your account",
+        message: "Please check your inbox to  verify your account",
         accessToken,
       });
     }
@@ -167,17 +166,14 @@ export const forgotPasswordController = async (req, res) => {
 
 export const resetPasswordController = async (req, res) => {
   const { code } = req.params;
-  const { email, password } = req.body;
-  const trimmedEmail = email?.trim().toLowerCase();
-  if (!trimmedEmail)
-    return res.status(400).json({ message: "Missing credentials" });
+  const { id, password } = req.body;
   if (!password)
     return res.status(400).json({ message: "new password is required" });
   if (!code)
     return res.status(400).json({ message: "Missing Verification code" });
 
   try {
-    const user = await UserModel.findOne({ email: trimmedEmail });
+    const user = await UserModel.findById(id);
     if (!user) return res.status(404).json({ message: "User does not exist" });
     if (
       code !== user.passwordVerificationCode ||

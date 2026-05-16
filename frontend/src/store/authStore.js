@@ -14,11 +14,11 @@ export const useAuthStore = create((set) => ({
   isLoading: false,
   isCheckingAuth: true,
   accessToken: null,
-  error: null,
+  error: "some error occured",
   signUp: async (name, email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post("/sign-up", { name, email, password });
+      const response = await api.post("/signup", { name, email, password });
       set({ accessToken: response.data.accessToken, user: response.data.user });
       return { success: true };
     } catch (err) {
@@ -39,20 +39,43 @@ export const useAuthStore = create((set) => ({
       set({ accessToken: response.data.accessToken, user: response.data.user });
       return { success: true };
     } catch (err) {
-      set({ error: err.response?.data?.message || "Something went wrong" });
+      set({
+        error: err.response?.data?.message || "Something went wrong",
+      });
+      return {
+        success: false,
+        message: err.response?.data?.message || "something went wrong",
+      };
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+  // logout function
+  logout: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post("/logout");
+      return { success: true };
+    } catch (err) {
+      console.log(err?.response?.data?.message || "Something went wrong");
+      set({ error: err?.response?.data?.message || "Something went wrong" });
       return { success: false };
     } finally {
       set({ isLoading: false });
     }
   },
   //   verify email function
-  verifyEmail: async (code) => {
+  verifyEmail: async (email, code) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post("/verify-email", { code });
+      const response = await api.post("/verify-email", { email, code });
       set({ isLoading: false });
+      return { success: true };
     } catch (err) {
-      set({ error: err?.response?.data?.message || "Something went wrong" });
+      set({
+        error: err?.response?.data?.message || "Something went wrong",
+        isLoading: false,
+      });
       return { success: false };
     }
   },
@@ -72,11 +95,11 @@ export const useAuthStore = create((set) => ({
   },
 
   //   reset password function
-  resetPassword: async (password, code, email) => {
+  resetPassword: async (password, code, id) => {
     set({ isLoading: true, error: null });
     try {
       const resetPassword = await api.post(`/reset-password/${code}`, {
-        email,
+        id,
         password,
       });
       set({ isLoading: false });
