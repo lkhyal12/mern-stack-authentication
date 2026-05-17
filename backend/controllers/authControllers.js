@@ -40,6 +40,7 @@ export const signUpController = async (req, res) => {
       verified: user.verified,
       userId: user._id,
       email: user.email,
+      name: user.name,
     };
     const accessToken = generateAccessToken(userObj);
     setCookies(res, user);
@@ -98,6 +99,7 @@ export const loginController = async (req, res) => {
       userId: user._id,
       email: trimmedEmail,
       verified: user.verified,
+      name: user.name,
     };
     const accessToken = generateAccessToken(userObj);
     if (!isPasswordValid)
@@ -117,13 +119,11 @@ export const loginController = async (req, res) => {
     }
 
     setCookies(res, user);
-    return res
-      .status(200)
-      .json({
-        message: "You are logged in successfully",
-        accessToken,
-        user: userObj,
-      });
+    return res.status(200).json({
+      message: "You are logged in successfully",
+      accessToken,
+      user: userObj,
+    });
   } catch (error) {
     console.log("error occured in the login controller ", error);
     return res.status(500).json({ message: "Server error" });

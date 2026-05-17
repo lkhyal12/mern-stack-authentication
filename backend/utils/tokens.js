@@ -11,6 +11,7 @@ export const generateRefreshToken = (user) => {
     verified: user.verified,
     userId: user._id,
     email: user.email,
+    name: user.name,
   };
   const refreshToken = jwt.sign(
     { user: userObj },

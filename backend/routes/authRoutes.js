@@ -3,6 +3,7 @@ import {
   forgotPasswordController,
   getProfileController,
   loginController,
+  logoutController,
   refreshController,
   resetPasswordController,
   signUpController,
@@ -14,6 +15,7 @@ const authRouter = express.Router();
 
 authRouter.post("/signup", limiter, signUpController);
 authRouter.post("/login", limiter, loginController);
+authRouter.post("/logout", logoutController);
 authRouter.post("/verify-email", limiter, verifyEmailController);
 authRouter.post("/forgot-password", limiter, forgotPasswordController);
 authRouter.post("/reset-password/:code", limiter, resetPasswordController);

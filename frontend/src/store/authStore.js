@@ -11,9 +11,8 @@ const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const accessToken = useAuthStore.getState().accessToken;
-  console.log({ accessToken });
+
   if (accessToken) {
-    console.log("hhhhhhhhhhhhhh");
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${accessToken}`,
@@ -38,6 +37,7 @@ api.interceptors.response.use(
         const response = await api.get("/refresh", {
           withCredentials: true,
         });
+        console.log({ response });
         const newAccessToken = response.data.accessToken;
         useAuthStore.setState({ accessToken: newAccessToken });
 
@@ -60,7 +60,7 @@ export const useAuthStore = create((set, get) => ({
   isLoading: false,
   isCheckingAuth: false,
   accessToken: null,
-  error: "some error occured",
+  error: null,
 
   // sign up function
   signUp: async (name, email, password) => {
