@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 export const checkAuth = (req, res, next) => {
   const authHeaders = req.headers.authorization;
+  console.log({ authHeaders });
   if (!authHeaders)
     return res.status(401).json({ message: "Missing accessToken" });
   const accessToken = authHeaders.split(" ")[1];

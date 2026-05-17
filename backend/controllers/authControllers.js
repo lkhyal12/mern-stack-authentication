@@ -119,7 +119,11 @@ export const loginController = async (req, res) => {
     setCookies(res, user);
     return res
       .status(200)
-      .json({ message: "You are logged in successfully", accessToken });
+      .json({
+        message: "You are logged in successfully",
+        accessToken,
+        user: userObj,
+      });
   } catch (error) {
     console.log("error occured in the login controller ", error);
     return res.status(500).json({ message: "Server error" });

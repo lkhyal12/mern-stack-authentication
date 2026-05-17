@@ -3,6 +3,7 @@ import {
   forgotPasswordController,
   getProfileController,
   loginController,
+  refreshController,
   resetPasswordController,
   signUpController,
   verifyEmailController,
@@ -17,4 +18,5 @@ authRouter.post("/verify-email", limiter, verifyEmailController);
 authRouter.post("/forgot-password", limiter, forgotPasswordController);
 authRouter.post("/reset-password/:code", limiter, resetPasswordController);
 authRouter.get("/profile", checkAuth, getProfileController);
+authRouter.get("/refresh", refreshController);
 export default authRouter;

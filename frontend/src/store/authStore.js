@@ -9,12 +9,60 @@ const api = axios.create({
   withCredentials: true,
 });
 
-export const useAuthStore = create((set) => ({
+api.interceptors.request.use((config) => {
+  const accessToken = useAuthStore.getState().accessToken;
+  console.log({ accessToken });
+  if (accessToken) {
+    console.log("hhhhhhhhhhhhhh");
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${accessToken}`,
+    };
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    console.log({ originalRequest });
+
+    if (
+      error?.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/refresh"
+    ) {
+      originalRequest._retry = true;
+      try {
+        const response = await api.get("/refresh", {
+          withCredentials: true,
+        });
+        const newAccessToken = response.data.accessToken;
+        useAuthStore.setState({ accessToken: newAccessToken });
+
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        return api(originalRequest);
+      } catch (err) {
+        useAuthStore.setState({
+          accessToken: null,
+          user: null,
+        });
+
+        return Promise.reject(err);
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+export const useAuthStore = create((set, get) => ({
   user: null,
   isLoading: false,
-  isCheckingAuth: true,
+  isCheckingAuth: false,
   accessToken: null,
   error: "some error occured",
+
+  // sign up function
   signUp: async (name, email, password) => {
     set({ isLoading: true, error: null });
     try {
@@ -36,6 +84,7 @@ export const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.post("/login", { email, password });
+      console.log({ response });
       set({ accessToken: response.data.accessToken, user: response.data.user });
       return { success: true };
     } catch (err) {
@@ -107,6 +156,26 @@ export const useAuthStore = create((set) => ({
     } catch (err) {
       set({ error: err.response?.data?.message || "Something went wrong" });
       return { success: false };
+    }
+  },
+  // getUser function
+  getUser: async () => {
+    set({ isCheckingAuth: true, error: null });
+    try {
+      const response = await api.get("/profile", {
+        headers: {
+          Authorization: `Bearer ${get().accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      set({ user: response.data.user, accessToken: response.data.accessToken });
+      return { success: true };
+    } catch (err) {
+      console.log(err?.response?.data?.message || err);
+      set({ error: err?.response?.data?.message || "Something went wrong" });
+      return { success: false };
+    } finally {
+      set({ isCheckingAuth: false });
     }
   },
 }));
